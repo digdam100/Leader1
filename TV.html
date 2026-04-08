@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مانیتورینگ شبکه‌های ماهواره‌ای</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest"></script>
+    
+    <style>
+        @font-face {
+            font-family: 'Pinar';
+            src: local('Pinar'), local('Pinar-Regular'), local('Pinar-Medium');
+        }
+
+        body {
+            background-color: #080808;
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+            color: #ffffff;
+            font-family: 'Pinar', Tahoma, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #660000 0%, #cc0000 50%, #660000 100%);
+            border-bottom: 4px solid #ff3333;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+
+        .category-title {
+            background-color: #111111;
+            color: #ff4d4d;
+            margin: 20px 40px 10px;
+            font-size: 20px;
+            border-right: 5px solid #cc0000;
+            padding: 8px 15px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 0 40px 40px;
+        }
+
+        .channel-card {
+            background: #141414;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .channel-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #e0e0e0;
+        }
+
+        .mini-player-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mini-player-container video, .mini-player-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            object-fit: cover;
+        }
+
+        .click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+        }
+
+        .channel-card:focus, .channel-card:hover {
+            transform: scale(1.03);
+            border-color: #ff1a1a;
+            background: #2b0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .channel-card:focus h3, .channel-card:hover h3 {
+            color: #ff4d4d;
+        }
+
+        #fullscreen-player {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 9999;
+        }
+
+        #fs-video, #fs-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #fs-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(204, 0, 0, 0.8);
+            padding: 8px 25px;
+            border-radius: 5px;
+            z-index: 10001;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #ff4d4d;
+        }
+
+        #back-button {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            z-index: 10001;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: inherit;
+            background: #cc0000;
+            color: white;
+            border: 2px solid #ff4d4d;
+            border-radius: 5px;
+            cursor: pointer;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #back-button:focus, #back-button:hover {
+            background: #ff1a1a;
+            box-shadow: 0 0 15px rgba(255,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-ui">
+        <div class="header">
+            <h1>مانیتورینگ شبکه‌های ماهواره‌ای وهابیت</h1>
+        </div>
+
+        <div class="category-title">شبکه‌های فارسی‌زبان</div>
+        <div class="channel-grid" id="persian-channels"></div>
+
+        <div class="category-title">شبکه‌های عربی‌زبان</div>
+        <div class="channel-grid" id="arabic-channels"></div>
+    </div>
+
+    <div id="fullscreen-player">
+        <button id="back-button" onclick="closeFullscreen()">خروج از حالت پخش (Esc)</button>
+        <div id="fs-title">نام شبکه</div>
+        <video id="fs-video" controls autoplay></video>
+        <iframe id="fs-iframe" allow="autoplay; fullscreen"></iframe>
+    </div>
+
+    <script>
+        // دیتابیس آپدیت شده شبکه‌ها با لینک‌های جدید شما
+        const channels = [
+            // --- شبکه‌های فارسی ---
+            { id: 1, name: "شبکه جهانی کلمه", type: "m3u8", url: "https://klmhls.wns.live/hls/stream.m3u8", lang: "fa" },
+            { id: 2, name: "شبکه جهانی نور", type: "m3u8", url: "https://cdn.bestream.io:19360/elfaro4/elfaro4.m3u8", lang: "fa" },
+            { id: 3, name: "شبکه جهانی وصال حق", type: "m3u8", url: "https://wesalhaq.tv/live/index.m3u8", lang: "fa" },
+            
+            // --- شبکه‌های عربی (اکثراً با لینک‌های جدید شما) ---
+            { id: 4, name: "وصال عربی", type: "m3u8", url: "https://ams.juraganstreaming.com:5443/LiveApp/streams/wesaltv.m3u8", lang: "ar" },
+            { id: 5, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8", lang: "ar" },
+            { id: 6, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8", lang: "ar" },
+            { id: 7, name: "شبکه اقرأ", type: "m3u8", url: "https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8", lang: "ar" },
+        ];
+
+        let fsHls = null;
+        let fsTs = null; // متغیر برای پلیر TS تمام صفحه
+        
+        const fsVideo = document.getElementById('fs-video');
+        const fsIframe = document.getElementById('fs-iframe');
+        const fsTitle = document.getElementById('fs-title');
+        const fsPlayer = document.getElementById('fullscreen-player');
+        const mainUI = document.getElementById('main-ui');
+
+        function renderChannels() {
+            const persianGrid = document.getElementById('persian-channels');
+            const arabicGrid = document.getElementById('arabic-channels');
+
+            channels.forEach(channel => {
+                const card = document.createElement('button');
+                card.className = 'channel-card';
+                card.id = `card-${channel.id}`;
+                card.onclick = () => openFullscreen(channel);
+
+                const title = document.createElement('h3');
+                title.textContent = channel.name;
+
+                const playerContainer = document.createElement('div');
+                playerContainer.className = 'mini-player-container';
+                
+                const clickOverlay = document.createElement('div');
+                clickOverlay.className = 'click-overlay';
+                playerContainer.appendChild(clickOverlay);
+
+                if (channel.type === 'm3u8' || channel.type === 'ts') {
+                    const video = document.createElement('video');
+                    video.muted = true; 
+                    video.autoplay = true;
+                    playerContainer.appendChild(video);
+                    
+                    if (channel.type === 'm3u8' && Hls.isSupported()) {
+                        const hls = new Hls({ capLevelToPlayerSize: true }); 
+                        hls.loadSource(channel.url);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log(e)));
+                    } else if (channel.type === 'ts' && mpegts.getFeatureList().mseLivePlayback) {
+                        // پخش لینک‌های TS در پنجره‌های کوچک
+                        const tsPlayer = mpegts.createPlayer({
+                            type: 'mpegts',
+                            isLive: true,
+                            url: channel.url
+                        });
+                        tsPlayer.attachMediaElement(video);
+                        tsPlayer.load();
+                        tsPlayer.play().catch(e => console.log(e));
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = channel.url;
+                    }
+                } else if (channel.type === 'youtube') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = channel.url;
+                    playerContainer.appendChild(iframe);
+                }
+
+                card.appendChild(title);
+                card.appendChild(playerContainer);
+
+                if (channel.lang === 'fa') {
+                    persianGrid.appendChild(card);
+                } else {
+                    arabicGrid.appendChild(card);
+                }
+            });
+        }
+
+        function openFullscreen(channel) {
+            mainUI.style.display = 'none';
+            fsPlayer.style.display = 'block';
+            fsTitle.textContent = channel.name;
+            document.getElementById('back-button').focus();
+
+            // پاک کردن پلیرهای قبلی برای جلوگیری از تداخل
+            if (fsHls) { fsHls.destroy(); fsHls = null; }
+            if (fsTs) { fsTs.destroy(); fsTs = null; }
+
+            if (channel.type === 'm3u8' || channel.type === 'ts') {
+                fsIframe.style.display = 'none';
+                fsVideo.style.display = 'block';
+                
+                if (channel.type === 'm3u8' && Hls.isSupported()) {
+                    fsHls = new Hls();
+                    fsHls.loadSource(channel.url);
+                    fsHls.attachMedia(fsVideo);
+                    fsHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        fsVideo.muted = false; 
+                        fsVideo.play();
+                    });
+                } else if (channel.type === 'ts' && mpegts.getFeatureList().mseLivePlayback) {
+                    fsTs = mpegts.createPlayer({
+                        type: 'mpegts',
+                        isLive: true,
+                        url: channel.url
+                    });
+                    fsTs.attachMediaElement(fsVideo);
+                    fsTs.load();
+                    fsVideo.muted = false;
+                    fsTs.play();
+                } else if (fsVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                    fsVideo.src = channel.url;
+                    fsVideo.muted = false;
+                    fsVideo.play();
+                }
+            } else {
+                fsVideo.style.display = 'none';
+                fsIframe.style.display = 'block';
+                fsIframe.src = channel.url.replace('&mute=1', '&mute=0');
+            }
+        }
+
+        function closeFullscreen() {
+            if (fsHls) { fsHls.destroy(); fsHls = null; }
+            if (fsTs) { fsTs.destroy(); fsTs = null; }
+            fsVideo.pause();
+            fsVideo.removeAttribute('src');
+            fsIframe.removeAttribute('src');
+            
+            fsPlayer.style.display = 'none';
+            mainUI.style.display = 'block';
+            
+            const firstCard = document.querySelector('.channel-card');
+            if (firstCard) firstCard.focus();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape" || event.key === "Backspace") {
+                if (fsPlayer.style.display === 'block') {
+                    closeFullscreen();
+                }
+            }
+        });
+
+        window.onload = () => {
+            renderChannels();
+            setTimeout(() => {
+                const firstCard = document.querySelector('.channel-card');
+                if (firstCard) firstCard.focus();
+            }, 500);
+        };
+    </script>
+</body>
+</html>
