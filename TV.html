@@ -18,7 +18,6 @@
             font-display: swap;
         }
 
-        /* رفع مشکل ارتفاع در تلویزیون */
         html, body {
             height: 100%;
         }
@@ -32,13 +31,13 @@
             padding: 0;
             min-height: 100vh;
             overflow-x: hidden;
-            overflow-y: auto; /* اجازه اسکرول عمودی */
+            overflow-y: auto;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
         }
 
         #main-ui {
-            padding-bottom: 200px; /* فضای خالی برای گیر نکردن شبکه‌های آخر در لبه تلویزیون */
+            padding-bottom: 200px; 
         }
 
         .header {
@@ -70,7 +69,6 @@
             display: inline-block;
         }
 
-        /* تغییر اساسی از Grid به Flexbox برای سازگاری با کنترل تلویزیون */
         .channel-grid {
             display: flex;
             flex-wrap: wrap;
@@ -91,7 +89,6 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            /* ابعاد مشخص برای حالت Flexbox */
             width: 100%;
             max-width: 320px;
             flex: 1 1 300px;
@@ -111,23 +108,16 @@
             border-radius: 6px;
             overflow: hidden;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .mini-player-container video, .mini-player-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            object-fit: cover;
-        }
-
-        .click-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            background: transparent;
+        /* استایل آیکون پیش‌نمایش شبکه برای کاهش فشار روی پردازنده تلویزیون */
+        .tv-icon {
+            font-size: 60px;
+            color: #333;
+            transition: 0.3s;
         }
 
         .channel-card:focus, .channel-card:hover {
@@ -135,11 +125,16 @@
             border-color: #ff1a1a;
             background: #2b0000;
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
-            z-index: 20; /* برای اینکه در زمان انتخاب شدن، بالاتر از بقیه قرار بگیرد */
+            z-index: 20; 
         }
 
         .channel-card:focus h3, .channel-card:hover h3 {
             color: #ff4d4d;
+        }
+
+        .channel-card:focus .tv-icon, .channel-card:hover .tv-icon {
+            color: #ff4d4d;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
         }
 
         #fullscreen-player {
@@ -228,8 +223,8 @@
             
             // --- شبکه‌های عربی ---
             { id: 5, name: "وصال عربی", type: "m3u8", url: "https://ams.juraganstreaming.com:5443/LiveApp/streams/wesaltv.m3u8", lang: "ar" },
-			{ id: 6, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8", lang: "ar" },
-			{ id: 7, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8", lang: "ar" },
+            { id: 6, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://win.holol.com/live/quran/playlist.m3u8", lang: "ar" },
+            { id: 7, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://win.holol.com/live/sunnah/playlist.m3u8", lang: "ar" },
             { id: 8, name: "شبکه اقرأ", type: "m3u8", url: "https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8", lang: "ar" },
         ];
 
@@ -255,41 +250,10 @@
                 const title = document.createElement('h3');
                 title.textContent = channel.name;
 
+                // به جای لود کردن ویدیوی سنگین، فقط یک آیکون نمایش می‌دهیم
                 const playerContainer = document.createElement('div');
                 playerContainer.className = 'mini-player-container';
-                
-                const clickOverlay = document.createElement('div');
-                clickOverlay.className = 'click-overlay';
-                playerContainer.appendChild(clickOverlay);
-
-                if (channel.type === 'm3u8' || channel.type === 'ts') {
-                    const video = document.createElement('video');
-                    video.muted = true; 
-                    video.autoplay = true;
-                    playerContainer.appendChild(video);
-                    
-                    if (channel.type === 'm3u8' && Hls.isSupported()) {
-                        const hls = new Hls({ capLevelToPlayerSize: true }); 
-                        hls.loadSource(channel.url);
-                        hls.attachMedia(video);
-                        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log(e)));
-                    } else if (channel.type === 'ts' && mpegts.getFeatureList().mseLivePlayback) {
-                        const tsPlayer = mpegts.createPlayer({
-                            type: 'mpegts',
-                            isLive: true,
-                            url: channel.url
-                        });
-                        tsPlayer.attachMediaElement(video);
-                        tsPlayer.load();
-                        tsPlayer.play().catch(e => console.log(e));
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = channel.url;
-                    }
-                } else if (channel.type === 'youtube') {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = channel.url;
-                    playerContainer.appendChild(iframe);
-                }
+                playerContainer.innerHTML = '<div class="tv-icon">📺</div>';
 
                 card.appendChild(title);
                 card.appendChild(playerContainer);
@@ -367,10 +331,8 @@
             }
         });
 
-        // اجبار تلویزیون به اسکرول کردن به سمت شبکه‌ای که با کنترل انتخاب شده
         document.addEventListener('focus', function(event) {
             if (event.target && event.target.classList.contains('channel-card')) {
-                // تنظیم block روی nearest باعث می‌شود صفحه پرش‌های ناگهانی نداشته باشد
                 event.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }, true);
