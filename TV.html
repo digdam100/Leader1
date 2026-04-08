@@ -113,37 +113,11 @@
             justify-content: center;
         }
 
-        /* متن در حال بارگذاری قبل از شروع پخش */
-        .loading-text {
-            color: #666;
-            font-size: 14px;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
-
-        .mini-player-container video, .mini-player-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .click-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            background: transparent;
+        /* استایل آیکون پیش‌نمایش شبکه برای کاهش فشار روی پردازنده تلویزیون */
+        .tv-icon {
+            font-size: 60px;
+            color: #333;
+            transition: 0.3s;
         }
 
         .channel-card:focus, .channel-card:hover {
@@ -156,6 +130,11 @@
 
         .channel-card:focus h3, .channel-card:hover h3 {
             color: #ff4d4d;
+        }
+
+        .channel-card:focus .tv-icon, .channel-card:hover .tv-icon {
+            color: #ff4d4d;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
         }
 
         #fullscreen-player {
@@ -258,8 +237,7 @@
         const fsPlayer = document.getElementById('fullscreen-player');
         const mainUI = document.getElementById('main-ui');
 
-        // مرحله ۱: ساختن ظاهر همه شبکه‌ها به صورت همزمان (خالی)
-        function renderChannelsUI() {
+        function renderChannels() {
             const persianGrid = document.getElementById('persian-channels');
             const arabicGrid = document.getElementById('arabic-channels');
 
@@ -272,16 +250,10 @@
                 const title = document.createElement('h3');
                 title.textContent = channel.name;
 
+                // به جای لود کردن ویدیوی سنگین، فقط یک آیکون نمایش می‌دهیم
                 const playerContainer = document.createElement('div');
                 playerContainer.className = 'mini-player-container';
-                playerContainer.id = `player-container-${channel.id}`; // یک آیدی اختصاصی برای هر قاب
-                
-                // متن موقت تا زمانی که نوبت پخش برسد
-                playerContainer.innerHTML = '<div class="loading-text">در صف بارگذاری...</div>';
-
-                const clickOverlay = document.createElement('div');
-                clickOverlay.className = 'click-overlay';
-                playerContainer.appendChild(clickOverlay);
+                playerContainer.innerHTML = '<div class="tv-icon">📺</div>';
 
                 card.appendChild(title);
                 card.appendChild(playerContainer);
@@ -292,58 +264,6 @@
                     arabicGrid.appendChild(card);
                 }
             });
-
-            // شروع فرآیند بارگذاری نوبتی (شبکه اول را با ۱ ثانیه تاخیر شروع کن)
-            setTimeout(() => {
-                loadChannelSequentially(0);
-            }, 1000);
-        }
-
-        // مرحله ۲: تابع بارگذاری نوبتی (ایده هوشمندانه شما)
-        function loadChannelSequentially(index) {
-            // اگر همه شبکه‌ها تمام شدند، متوقف شو
-            if (index >= channels.length) return;
-
-            const channel = channels[index];
-            const container = document.getElementById(`player-container-${channel.id}`);
-            
-            // پاک کردن متن "در صف بارگذاری"
-            const loadingText = container.querySelector('.loading-text');
-            if (loadingText) loadingText.remove();
-
-            if (channel.type === 'm3u8' || channel.type === 'ts') {
-                const video = document.createElement('video');
-                video.muted = true; 
-                video.autoplay = true;
-                container.appendChild(video);
-                
-                if (channel.type === 'm3u8' && Hls.isSupported()) {
-                    const hls = new Hls({ capLevelToPlayerSize: true }); 
-                    hls.loadSource(channel.url);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log(e)));
-                } else if (channel.type === 'ts' && mpegts.getFeatureList().mseLivePlayback) {
-                    const tsPlayer = mpegts.createPlayer({
-                        type: 'mpegts',
-                        isLive: true,
-                        url: channel.url
-                    });
-                    tsPlayer.attachMediaElement(video);
-                    tsPlayer.load();
-                    tsPlayer.play().catch(e => console.log(e));
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = channel.url;
-                }
-            } else if (channel.type === 'youtube') {
-                const iframe = document.createElement('iframe');
-                iframe.src = channel.url;
-                container.appendChild(iframe);
-            }
-
-            // فرمان کلیدی: ۱.۵ ثانیه صبر کن، بعد برو سراغ شبکه بعدی!
-            setTimeout(() => {
-                loadChannelSequentially(index + 1);
-            }, 1500);
         }
 
         function openFullscreen(channel) {
@@ -418,7 +338,7 @@
         }, true);
 
         window.onload = () => {
-            renderChannelsUI(); // ابتدا قالب را می‌سازد
+            renderChannels();
             setTimeout(() => {
                 const firstCard = document.querySelector('.channel-card');
                 if (firstCard) firstCard.focus();
