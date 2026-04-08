@@ -32,6 +32,11 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* این بخش برای جلوگیری از چسبیدن شبکه‌های آخر به پایین تلویزیون اضافه شد */
+        #main-ui {
+            padding-bottom: 150px; 
+        }
+
         .header {
             background: linear-gradient(90deg, #660000 0%, #cc0000 50%, #660000 100%);
             border-bottom: 4px solid #ff3333;
@@ -210,12 +215,11 @@
             { id: 3, name: "شبکه رسول الله", type: "m3u8", url: "https://avr.host247.net/live/rasoulallahtv/playlist.m3u8", lang: "fa" },
             { id: 4, name: "شبکه جهانی وصال حق", type: "m3u8", url: "https://wesalhaq.tv/live/index.m3u8", lang: "fa" },
             
-            
             // --- شبکه‌های عربی ---
-            { id: 4, name: "وصال عربی", type: "m3u8", url: "https://ams.juraganstreaming.com:5443/LiveApp/streams/wesaltv.m3u8", lang: "ar" },
-            { id: 5, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://win.holol.com/live/quran/playlist.m3u8", lang: "ar" },
-            { id: 6, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://win.holol.com/live/sunnah/playlist.m3u8", lang: "ar" },
-            { id: 7, name: "شبکه اقرأ", type: "m3u8", url: "https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8", lang: "ar" },
+            { id: 5, name: "وصال عربی", type: "m3u8", url: "https://ams.juraganstreaming.com:5443/LiveApp/streams/wesaltv.m3u8", lang: "ar" },
+            { id: 6, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://win.holol.com/live/quran/playlist.m3u8", lang: "ar" },
+            { id: 7, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://win.holol.com/live/sunnah/playlist.m3u8", lang: "ar" },
+            { id: 8, name: "شبکه اقرأ", type: "m3u8", url: "https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8", lang: "ar" },
         ];
 
         let fsHls = null;
@@ -351,6 +355,13 @@
                 }
             }
         });
+
+        // این بخش اضافه شد تا هر شبکه‌ای که با کنترل انتخاب می‌کنی، بیاید وسط صفحه تلویزیون
+        document.addEventListener('focus', function(event) {
+            if (event.target && event.target.classList.contains('channel-card')) {
+                event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, true);
 
         window.onload = () => {
             renderChannels();
