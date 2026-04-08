@@ -6,13 +6,16 @@
     <title>مانیتورینگ شبکه‌های ماهواره‌ای</title>
     
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest"></script>
     
     <style>
+        /* اضافه‌شدن فونت Pinar از آدرس درخواستی شما */
         @font-face {
             font-family: 'Pinar';
-            src: local('Pinar'), local('Pinar-Regular'), local('Pinar-Medium');
+            src: url('https://github.com/digdam100/Leader1/raw/refs/heads/main/Pinar-VF%5Bwght-KSHD-DSTY%5D.woff2') format('woff2-variations'),
+                 url('https://github.com/digdam100/Leader1/raw/refs/heads/main/Pinar-VF%5Bwght-KSHD-DSTY%5D.woff2') format('woff2');
+            font-weight: 100 900;
+            font-display: swap;
         }
 
         body {
@@ -24,6 +27,9 @@
             padding: 0;
             min-height: 100vh;
             overflow-x: hidden;
+            /* بهینه‌سازی نمایش فونت */
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
         }
 
         .header {
@@ -38,7 +44,7 @@
         .header h1 {
             margin: 0;
             font-size: 26px;
-            font-weight: bold;
+            font-weight: 800; /* استفاده از قابلیت متغیر بودن فونت برای ضخامت */
             color: #ffffff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             letter-spacing: 1px;
@@ -79,6 +85,7 @@
         .channel-card h3 {
             margin: 0 0 10px 0;
             font-size: 16px;
+            font-weight: 600;
             color: #e0e0e0;
         }
 
@@ -196,14 +203,13 @@
     </div>
 
     <script>
-        // دیتابیس آپدیت شده شبکه‌ها با لینک‌های جدید شما
         const channels = [
             // --- شبکه‌های فارسی ---
             { id: 1, name: "شبکه جهانی کلمه", type: "m3u8", url: "https://klmhls.wns.live/hls/stream.m3u8", lang: "fa" },
             { id: 2, name: "شبکه جهانی نور", type: "m3u8", url: "https://cdn.bestream.io:19360/elfaro4/elfaro4.m3u8", lang: "fa" },
             { id: 3, name: "شبکه جهانی وصال حق", type: "m3u8", url: "https://wesalhaq.tv/live/index.m3u8", lang: "fa" },
             
-            // --- شبکه‌های عربی (اکثراً با لینک‌های جدید شما) ---
+            // --- شبکه‌های عربی ---
             { id: 4, name: "وصال عربی", type: "m3u8", url: "https://ams.juraganstreaming.com:5443/LiveApp/streams/wesaltv.m3u8", lang: "ar" },
             { id: 5, name: "قرآن (مکه مکرمه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8", lang: "ar" },
             { id: 6, name: "سنت نبوی (مدینه)", type: "m3u8", url: "https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8", lang: "ar" },
@@ -211,7 +217,7 @@
         ];
 
         let fsHls = null;
-        let fsTs = null; // متغیر برای پلیر TS تمام صفحه
+        let fsTs = null;
         
         const fsVideo = document.getElementById('fs-video');
         const fsIframe = document.getElementById('fs-iframe');
@@ -251,7 +257,6 @@
                         hls.attachMedia(video);
                         hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log(e)));
                     } else if (channel.type === 'ts' && mpegts.getFeatureList().mseLivePlayback) {
-                        // پخش لینک‌های TS در پنجره‌های کوچک
                         const tsPlayer = mpegts.createPlayer({
                             type: 'mpegts',
                             isLive: true,
@@ -286,7 +291,6 @@
             fsTitle.textContent = channel.name;
             document.getElementById('back-button').focus();
 
-            // پاک کردن پلیرهای قبلی برای جلوگیری از تداخل
             if (fsHls) { fsHls.destroy(); fsHls = null; }
             if (fsTs) { fsTs.destroy(); fsTs = null; }
 
