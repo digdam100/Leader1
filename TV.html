@@ -9,13 +9,18 @@
     <script src="https://cdn.jsdelivr.net/npm/mpegts.js@latest"></script>
     
     <style>
-        /* اضافه‌شدن فونت Pinar از آدرس درخواستی شما */
+        /* اضافه‌شدن فونت Pinar */
         @font-face {
             font-family: 'Pinar';
             src: url('https://cdn.jsdelivr.net/gh/digdam100/Leader1/Pinar-VF%5Bwght-KSHD-DSTY%5D.woff2') format('woff2-variations'),
                  url('https://cdn.jsdelivr.net/gh/digdam100/Leader1/Pinar-VF%5Bwght-KSHD-DSTY%5D.woff2') format('woff2');
             font-weight: 100 900;
             font-display: swap;
+        }
+
+        /* رفع مشکل ارتفاع در تلویزیون */
+        html, body {
+            height: 100%;
         }
 
         body {
@@ -27,14 +32,13 @@
             padding: 0;
             min-height: 100vh;
             overflow-x: hidden;
-            /* بهینه‌سازی نمایش فونت */
+            overflow-y: auto; /* اجازه اسکرول عمودی */
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* این بخش برای جلوگیری از چسبیدن شبکه‌های آخر به پایین تلویزیون اضافه شد */
         #main-ui {
-            padding-bottom: 150px; 
+            padding-bottom: 200px; /* فضای خالی برای گیر نکردن شبکه‌های آخر در لبه تلویزیون */
         }
 
         .header {
@@ -49,7 +53,7 @@
         .header h1 {
             margin: 0;
             font-size: 26px;
-            font-weight: 800; /* استفاده از قابلیت متغیر بودن فونت برای ضخامت */
+            font-weight: 800;
             color: #ffffff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             letter-spacing: 1px;
@@ -66,9 +70,11 @@
             display: inline-block;
         }
 
+        /* تغییر اساسی از Grid به Flexbox برای سازگاری با کنترل تلویزیون */
         .channel-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 20px;
             padding: 0 40px 40px;
         }
@@ -85,6 +91,10 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            /* ابعاد مشخص برای حالت Flexbox */
+            width: 100%;
+            max-width: 320px;
+            flex: 1 1 300px;
         }
 
         .channel-card h3 {
@@ -121,10 +131,11 @@
         }
 
         .channel-card:focus, .channel-card:hover {
-            transform: scale(1.03);
+            transform: scale(1.05);
             border-color: #ff1a1a;
             background: #2b0000;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+            z-index: 20; /* برای اینکه در زمان انتخاب شدن، بالاتر از بقیه قرار بگیرد */
         }
 
         .channel-card:focus h3, .channel-card:hover h3 {
@@ -356,10 +367,11 @@
             }
         });
 
-        // این بخش اضافه شد تا هر شبکه‌ای که با کنترل انتخاب می‌کنی، بیاید وسط صفحه تلویزیون
+        // اجبار تلویزیون به اسکرول کردن به سمت شبکه‌ای که با کنترل انتخاب شده
         document.addEventListener('focus', function(event) {
             if (event.target && event.target.classList.contains('channel-card')) {
-                event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // تنظیم block روی nearest باعث می‌شود صفحه پرش‌های ناگهانی نداشته باشد
+                event.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }, true);
 
